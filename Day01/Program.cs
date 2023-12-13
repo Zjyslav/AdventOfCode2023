@@ -1,2 +1,11 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+﻿using Day01;
+
+try
+{
+    int sum = CalibrationValues.GetCalibrationValueSum("input.txt");
+    Console.WriteLine(sum);
+}
+catch (Exception ex)
+{
+    Console.WriteLine(ex.Message);
+}
