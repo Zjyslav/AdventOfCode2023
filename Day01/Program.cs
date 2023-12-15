@@ -3,7 +3,10 @@
 try
 {
     int sum = CalibrationValues.GetCalibrationValueSum("input.txt");
-    Console.WriteLine(sum);
+    Console.WriteLine($"Part 1: {sum}");
+
+    sum = CalibrationValues.GetCalibrationValueSum("input.txt", true);
+    Console.WriteLine($"Part 2: {sum}");
 }
 catch (Exception ex)
 {

@@ -1,7 +1,8 @@
-﻿namespace Day01;
+﻿
+namespace Day01;
 public static class CalibrationValues
 {
-    public static int GetCalibrationValueSum(string filePath)
+    public static int GetCalibrationValueSum(string filePath, bool includeSpelledDigits = false)
     {
         int sum = 0;
 
@@ -12,37 +13,74 @@ public static class CalibrationValues
 
         foreach (string line in inputLines)
         {
-            sum += GetCalibrationValue(line);
+            sum += GetCalibrationValue(line, includeSpelledDigits);
         }
 
         return sum;
     }
-    public static int GetCalibrationValue(string input)
+
+    public static int GetCalibrationValue(string input, bool includeSpelledDigits = false)
     {
-        int output = 0;
+        (int? index, int? digit) first = (null, null), last = (null, null);
 
-        char[] chars = input.ToCharArray();
-
-        for (int i = 0; i < chars.Length; i++)
+        string[] digits =
         {
-            if (char.IsDigit(chars[i]))
+            "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
+        };
+
+        string[] words =
+        {
+            "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"
+        };
+
+        for (int i = 0; i < digits.Length; i++)
+        {
+            int firstIndex = input.IndexOf(digits[i]);
+            if (firstIndex == -1)
+                continue;
+            if (firstIndex < first.index || first.index == null)
+                first = (firstIndex, i);
+
+            int lastIndex = firstIndex;
+            while (lastIndex < input.Length - 1)
             {
-                output += 10 * int.Parse(chars[i].ToString());
-                break;
+                int nextIndex = input.IndexOf(digits[i], lastIndex + 1);
+                if (nextIndex == -1)
+                    break;
+                lastIndex = nextIndex;
+            }
+
+            if (lastIndex > last.index || last.index == null)
+                last = (lastIndex, i);
+        }
+
+        if (includeSpelledDigits)
+        {
+            for (int i = 0; i < words.Length; i++)
+            {
+                int firstIndex = input.IndexOf(words[i]);
+                if (firstIndex == -1)
+                    continue;
+                if (firstIndex < first.index || first.index == null)
+                    first = (firstIndex, i);
+
+                int lastIndex = firstIndex;
+                while (lastIndex < input.Length - 1)
+                {
+                    int nextIndex = input.IndexOf(words[i], lastIndex + 1);
+                    if (nextIndex == -1)
+                        break;
+                    lastIndex = nextIndex;
+                }
+
+                if (lastIndex > last.index || last.index == null)
+                    last = (lastIndex, i);
             }
         }
 
-        for (int i = chars.Length - 1; i >= 0; i--)
-        {
-            if (char.IsDigit(chars[i]))
-            {
-                output += int.Parse(chars[i].ToString());
-                break;
-            }
-        }
-
-        return output;
+        if (first.digit is null || last.digit is null)
+            return 0;
+        else
+            return (int) first.digit * 10 + (int) last.digit;
     }
-
-
 }
