@@ -30,6 +30,26 @@ public static class CubesGame
         return sum;
     }
 
+    public static int GetSumOfPowersOfMinimumSets(string filePath)
+    {
+        int sum = 0;
+
+        if (File.Exists(filePath) == false)
+            throw new FileNotFoundException($"File {filePath} not found.");
+
+        string[] inputLines = File.ReadAllLines(filePath);
+
+        foreach (string line in inputLines)
+        {
+            Game game = ParseGame(line);
+            CubeSet cubeSet = GetMinimumCubeSet(game);
+            int power = GetCubeSetPower(cubeSet);
+            sum += power;
+        }
+
+        return sum;
+    }
+
     private static Game ParseGame(string gameRecord)
     {
         Game output = new();
@@ -96,5 +116,29 @@ public static class CubesGame
         }
 
         return true;
+    }
+
+    private static CubeSet GetMinimumCubeSet(Game game)
+    {
+        int red = 0;
+        int green = 0;
+        int blue = 0;
+
+        foreach (var set in game.CubeSets)
+        {
+            if (set.Red > red)
+                red = set.Red;
+            if (set.Green > green)
+                green = set.Green;
+            if (set.Blue > blue)
+                blue = set.Blue;
+        }
+
+        return new CubeSet(red, green, blue);
+    }
+
+    private static int GetCubeSetPower(CubeSet cubeSet)
+    {
+        return cubeSet.Red * cubeSet.Green * cubeSet.Blue;
     }
 }
