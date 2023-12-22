@@ -18,6 +18,43 @@ public class ScratchcardsAnalyzer
         return points.Sum();
     }
 
+    public int GetNumberOfScratchcards()
+    {
+        var scratchcards = GetAllScratchcards();
+        int maxCardNumber = scratchcards.Select(s => s.CardNumber).Max();
+
+        var scratchcardCounts = scratchcards
+            .Select(s => new ScratchcardCount(
+                s.CardNumber,
+                GetNumberOfMatches(s)))
+            .ToList();
+
+
+        foreach (var count in scratchcardCounts)
+        {
+            if (count.Remaining == 0)
+            {
+                continue;
+            }
+
+            var cardsWon = count.GetWonCardNumbers(maxCardNumber);
+            do
+            {
+                foreach (var cardNumber in cardsWon)
+                {
+                    ScratchcardCount cardWon = scratchcardCounts
+                        .Where(c => c.CardNumber == cardNumber)
+                        .First();
+                
+                    cardWon.Add();
+                }
+                count.Use();                
+            } while (count.Remaining > 0);
+        }
+
+        return scratchcardCounts.Select(s => s.Total).Sum();
+    }
+
     private int CountScratchcardPoints(Scratchcard scratchcard)
     {
         int output = 0;
@@ -33,6 +70,19 @@ public class ScratchcardsAnalyzer
             }
         }
 
+        return output;
+    }
+
+    private int GetNumberOfMatches(Scratchcard scratchcard)
+    {
+        int output = 0;
+        foreach (int number in scratchcard.WinningNumbers)
+        {
+            if (scratchcard.NumbersIHave.Contains(number))
+            {
+                output++;
+            }
+        }
         return output;
     }
 
@@ -85,6 +135,52 @@ public class ScratchcardsAnalyzer
             output.Add(ParseScratchcard(line));
         }
 
+        return output;
+    }
+}
+
+public class ScratchcardCount
+{
+    private int _total = 1;
+    private int _used = 0;
+
+    public int Total { get { return _total; } }
+    public int Remaining { get { return _total - _used; } }
+    public int CardNumber { get; }
+    public int Matches { get; }
+    public ScratchcardCount(int cardNumber, int matches)
+    {
+        CardNumber = cardNumber;
+        Matches = matches;
+    }
+
+    public void Add()
+    {
+        _total++;
+    }
+
+    public bool Use()
+    {
+        if (Remaining == 0)
+        {
+            return false;
+        }
+        else
+        {
+            _used++;
+            return true;
+        }
+    }
+
+    public List<int> GetWonCardNumbers(int maxCardNumber)
+    {
+        List<int> output = new();
+        for (int i = CardNumber + 1; i <= maxCardNumber; i++)
+        {
+            if (output.Count == Matches)
+                break;
+            output.Add(i);
+        }
         return output;
     }
 }
