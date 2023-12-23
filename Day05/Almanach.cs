@@ -30,6 +30,30 @@ public class Almanach
         return locations.Min();
     }
 
+    public long GetLowestLocationForSeedRanges()
+    {
+        bool first = true;
+        long lowestLocation = 0;
+
+        for (int i = 0; i < seeds.Count; i+= 2)
+        {
+            for (int j = 0; j < seeds[i + 1]; j++)
+            {
+                long location = GetDestinationNumber(
+                    "seed",
+                    "location",
+                    seeds[i] + j);
+
+                if (first || location < lowestLocation)
+                {
+                    lowestLocation = location;
+                    first = false;
+                }
+            }
+        }
+        return lowestLocation;
+    }
+
     private List<long> ParseSeeds(string[] inputLines)
     {
         List<long> output = new();
