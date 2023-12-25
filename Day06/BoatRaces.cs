@@ -5,18 +5,25 @@ public class BoatRaces
 {
     List<Race> races = new();
 
-    public BoatRaces(string filePath)
+    public BoatRaces(string filePath, bool ignoreSpaces = false)
     {
         if (File.Exists(filePath) == false)
             throw new FileNotFoundException($"File {filePath} not found.");
 
         var inputLines = File.ReadAllLines(filePath);
-        ParseRaces(inputLines);
+        if (ignoreSpaces)
+        {
+            ParseOneRace(inputLines);
+        }
+        else
+        {
+            ParseRaces(inputLines);
+        }
     }
 
-    public int GetMultipliedMargins()
+    public long GetMultipliedMargins()
     {
-        int output = 1;
+        long output = 1;
 
         foreach (var race in races)
         {
@@ -26,10 +33,10 @@ public class BoatRaces
         return output;
     }
 
-    private int CalculateMarginOfError(Race race)
+    private long CalculateMarginOfError(Race race)
     {
-        int output = 0;
-        for (int i = 1; i <= race.Time; i++)
+        long output = 0;
+        for (long i = 1; i <= race.Time; i++)
         {
             if (race.CalculateDistance(i) > race.BestDistance)
                 output++;
@@ -55,8 +62,27 @@ public class BoatRaces
         for (int i = 0; i < timeMatches.Count; i++)
         {
             races.Add(new Race(
-                int.Parse(timeMatches[i].Value),
-                int.Parse(distanceMatches[i].Value)));
+                long.Parse(timeMatches[i].Value),
+                long.Parse(distanceMatches[i].Value)));
         }
+    }
+
+    private void ParseOneRace(string[] inputLines)
+    {
+        long time = long.Parse(
+            inputLines
+            .Where(l => l.StartsWith("Time:"))
+            .First()
+            .Replace("Time:", "")
+            .Replace(" ", ""));
+
+        long distance = long.Parse(
+            inputLines
+            .Where(l => l.StartsWith("Distance:"))
+            .First()
+            .Replace("Distance:", "")
+            .Replace(" ", ""));
+
+        races.Add(new Race(time, distance));
     }
 }

@@ -3,14 +3,15 @@
 public class Race
 {
 
-    public int Time { get; set; }
-    public int BestDistance { get; set; }
-    public Race(int time, int bestDistance)
+    public long Time { get; set; }
+    public long BestDistance { get; set; }
+    public Race(long time, long bestDistance)
     {
         Time = time;
         BestDistance = bestDistance;
     }
-    public int CalculateDistance(int buttonHoldTime)
+
+    public long CalculateDistance(long buttonHoldTime)
     {
         return buttonHoldTime * (Time - buttonHoldTime);
     }
