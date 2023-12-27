@@ -2,7 +2,7 @@
 public class CamelCards
 {
     List<Hand> hands = new();
-    public CamelCards(string filePath)
+    public CamelCards(string filePath, bool useJokerRules = false)
     {
         if (File.Exists(filePath) == false)
             throw new FileNotFoundException($"File {filePath} not found.");
@@ -14,7 +14,8 @@ public class CamelCards
             var lineElements = line.Split(' ');
             hands.Add(new Hand(
                 lineElements[0],
-                int.Parse(lineElements[1])));
+                int.Parse(lineElements[1]),
+                useJokerRules));
         }
 
         hands.Sort();
