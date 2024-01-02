@@ -23,11 +23,13 @@ public class MapReader
         }
     }
 
-    public long CountSteps(string endAddress)
+    public long CountSteps(string startAddress, string endAddress)
     {
         long steps = 0;
-        int currentIndex = 0;
-        Node currentNode = nodes[0];
+        int currentIndex = nodes.IndexOf(
+            nodes
+                .Where(n => n.Address == startAddress)
+                .First());
 
         int endIndex = nodes.IndexOf(
             nodes
