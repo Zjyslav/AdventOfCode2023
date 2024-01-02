@@ -59,6 +59,66 @@ public class MapReader
         return steps;
     }
 
+    public long CountStepsToOnlyZ()
+    {
+        List<long> stepsToLoop = new();
+
+        var startNodes = nodes.Where(n => n.Address.EndsWith('A'));
+
+        foreach (var node in startNodes)
+        {
+            stepsToLoop.Add(CountStepsToLoop(node.Address));
+        }
+
+        long lcm = stepsToLoop[0];
+
+        for (int i = 1; i < stepsToLoop.Count; i++)
+        {
+            lcm = LowestCommonMultiple(lcm, stepsToLoop[i]);
+        }
+
+        return lcm;
+    }
+    private long CountStepsToLoop(string startAddress)
+    {
+        long steps = 0;
+        Node currentNode = nodes.Where(n => n.Address == startAddress).First();
+        List<EndRecord> ends = new();
+
+        for (int i = 0; i < instructions.Length; i++)
+        {
+            int index;
+            if (instructions[i] == 'L')
+            {
+                index = currentNode.LeftIndex;
+            }
+            else
+            {
+                index = currentNode.RightIndex;
+            }
+            currentNode = nodes[index];
+            steps++;
+            if (currentNode.Address.EndsWith('Z'))
+            {
+                if (ends.Any(e => e.EndIndex == index && e.InstructionIndex == i))
+                {
+                    return ends
+                        .Where(e => e.EndIndex == index && e.InstructionIndex == i)
+                        .First()
+                        .Steps;
+                }
+                else
+                    ends.Add(new EndRecord(index, i, steps));
+            }
+
+            if (i == instructions.Length - 1)
+            {
+                i = -1;
+            }
+        }
+        return 0;
+    }
+
     private Node LookupNextNode(Node node, char direction)
     {
         if (direction == 'L')
@@ -76,5 +136,48 @@ public class MapReader
 
         node.LeftIndex = nodes.IndexOf(left);
         node.RightIndex = nodes.IndexOf(right);
+    }
+
+    private record EndRecord(int EndIndex, int InstructionIndex, long Steps);
+
+    private long LowestCommonMultiple(long a, long b)
+    {
+        var divisorsA = GetDivisors(a);
+        var divisorsB = GetDivisors(b);
+
+        List<long> resultDivisors = new();
+
+        foreach (long divisor in divisorsA)
+        {
+            if (divisorsB.Contains(divisor))
+                divisorsB.Remove(divisor);
+        }
+        resultDivisors.AddRange(divisorsA);
+        resultDivisors.AddRange(divisorsB);
+
+        long result = 1;
+        foreach (var divisor in resultDivisors)
+        {
+            result *= divisor;
+        }
+        return result;
+    }
+
+    private List<long> GetDivisors(long x)
+    {
+        List<long> output = new();
+        long divisor = 2;
+
+        while (x > 1)
+        {
+            if (x % divisor == 0)
+            {
+                output.Add(divisor);
+                x /= divisor;
+            }
+            else
+                divisor++;
+        }
+        return output;
     }
 }
