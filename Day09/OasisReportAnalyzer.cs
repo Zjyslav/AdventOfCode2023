@@ -14,12 +14,12 @@ public class OasisReportAnalyzer
         }
     }
 
-    public int GetSumOfPredictions()
+    public int GetSumOfPredictions(bool predictPast = false)
     {
         List<int> predictions = new();
         foreach (var history in histories)
         {
-            predictions.Add(PredictNextValue(history));
+            predictions.Add(PredictValue(history, predictPast));
         }
 
         return predictions.Sum();
@@ -35,7 +35,7 @@ public class OasisReportAnalyzer
         histories.Add(history);
     }
 
-    private int PredictNextValue(List<int> history)
+    private int PredictValue(List<int> history, bool predictPast)
     {
         List<List<int>> sequences = new();
         sequences.Add(history);
@@ -51,15 +51,30 @@ public class OasisReportAnalyzer
             }
         }
 
-        sequences.Last().Add(0);
-
-        for (int i = sequences.Count - 2; i >= 0 ; i--)
+        if (predictPast)
         {
-            int newElement = sequences[i].Last() + sequences[i + 1].Last();
-            sequences[i].Add(newElement);
-        }
+            sequences.Last().Insert(0, 0);
 
-        return sequences[0].Last();
+            for (int i = sequences.Count - 2; i >= 0; i--)
+            {
+                int newElement = sequences[i].First() - sequences[i + 1].First();
+                sequences[i].Insert(0, newElement);
+            }
+
+            return sequences[0].First();
+        }
+        else
+        {
+            sequences.Last().Add(0);
+
+            for (int i = sequences.Count - 2; i >= 0; i--)
+            {
+                int newElement = sequences[i].Last() + sequences[i + 1].Last();
+                sequences[i].Add(newElement);
+            }
+
+            return sequences[0].Last();
+        }
     }
 
     private List<int> GetSequenceOfDifferences(List<int> inputSequence)
