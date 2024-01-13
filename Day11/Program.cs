@@ -2,6 +2,10 @@
 
 ObservationAnalyzer analyzer = new("input.txt");
 
-int sum = analyzer.GetSumOfShortestPaths();
+long sum = analyzer.GetSumOfShortestPaths();
 
 Console.WriteLine($"Part 1: {sum}");
+
+long sumNewRules = analyzer.GetSumOfShortestPaths(1000000);
+
+Console.WriteLine($"Part 2: {sumNewRules}");

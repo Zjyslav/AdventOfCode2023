@@ -3,6 +3,8 @@ public class ObservationAnalyzer
 {
     List<List<char>> universe;
     List<List<char>> expandedUniverse;
+    List<int> emptyRows = new();
+    List<int> emptyColumns = new();
     public ObservationAnalyzer(string filePath)
     {
         if (File.Exists(filePath) == false)
@@ -13,57 +15,24 @@ public class ObservationAnalyzer
             .ToList();
 
         expandedUniverse = new(universe);
-        ExpandUniverse();
+        FindEmptyRowsAndColumns();
     }
 
-    public int GetSumOfShortestPaths()
+    public long GetSumOfShortestPaths(int expansionRate = 2)
     {
-        List<int> ShortestPaths = new();
-        List<Galaxy> galaxies = FindGalaxies(expandedUniverse);
+        List<long> ShortestPaths = new();
+        List<Galaxy> galaxies = FindGalaxies(universe);
 
         for (int i = 0; i < galaxies.Count - 1; i++)
         {
             for (int j = i + 1; j < galaxies.Count; j++)
             {
-                int path = CalculateShortestPath(galaxies[i], galaxies[j]);
+                long path = CalculateShortestPath(galaxies[i], galaxies[j], expansionRate);
                 ShortestPaths.Add(path);
             }
         }
 
         return ShortestPaths.Sum();
-    }
-
-    private void ExpandUniverse()
-    {
-        List<int> emptyRowIndexes = new();
-        List<int> emptyColumnIndexes = new();
-
-        for (int i = 0; i < universe.Count; i++)
-        {
-            bool empty = !universe[i].Any(c => c != '.');
-            if (empty)
-                emptyRowIndexes.Add(i);
-        }
-
-        for (int i = 0; i < universe[0].Count; i++)
-        {
-            bool empty = !universe.Select(r => r[i]).Any(c => c != '.');
-            if (empty)
-                emptyColumnIndexes.Add(i);
-        }
-
-        for (int i = 0; i < emptyRowIndexes.Count; i++)
-        {
-            expandedUniverse.Insert(emptyRowIndexes[i] + i, universe[emptyRowIndexes[i]]);
-        }
-
-        for (int i = 0; i < emptyColumnIndexes.Count; i++)
-        {
-            foreach (var row in expandedUniverse)
-            {
-                row.Insert(emptyColumnIndexes[i] + i, '.');
-            }
-        }
     }
 
     private List<Galaxy> FindGalaxies(List<List<char>> universe)
@@ -85,9 +54,26 @@ public class ObservationAnalyzer
         return output;
     }
 
-    private int CalculateShortestPath(Galaxy a, Galaxy b)
+    private void FindEmptyRowsAndColumns()
     {
-        int output = 0;
+        for (int i = 0; i < universe.Count; i++)
+        {
+            bool empty = !universe[i].Any(c => c != '.');
+            if (empty)
+                emptyRows.Add(i);
+        }
+
+        for (int i = 0; i < universe[0].Count; i++)
+        {
+            bool empty = !universe.Select(r => r[i]).Any(c => c != '.');
+            if (empty)
+                emptyColumns.Add(i);
+        }
+    }
+
+    private long CalculateShortestPath(Galaxy a, Galaxy b, int expansionRate)
+    {
+        long output = 0;
         if (a.X > b.X)
             output += a.X - b.X;
         else
@@ -97,6 +83,18 @@ public class ObservationAnalyzer
             output += a.Y - b.Y;
         else
             output += b.Y - a.Y;
+
+        foreach (var row in emptyRows)
+        {
+            if ((a.X < row && b.X > row) || (b.X < row && a.X > row))
+                output += (expansionRate - 1);
+        }
+
+        foreach (var column in emptyColumns)
+        {
+            if ((a.Y < column && b.Y > column) || (b.Y < column && a.Y > column))
+                output += (expansionRate - 1);
+        }
 
         return output;
     }
