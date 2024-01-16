@@ -48,7 +48,7 @@ public class ConditionRecordsAnalyzer
 
     private string? GetPotentialRemainingPart(string input, int damagedGroup, bool last)
     {
-        string pattern = $@"(?<=[.\?]*[?#]{{{damagedGroup}}}{ (last ? "" : @"[.\?]")})[.#\?]*";
+        string pattern = $@"(?<=\A[.\?]*[?#]{{{damagedGroup}}}{ (last ? "" : @"[.\?]")})[.#\?]*";
         return Regex
             .Matches(input, pattern)
             .FirstOrDefault()?
