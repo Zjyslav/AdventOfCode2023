@@ -1,17 +1,18 @@
 ﻿
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Day12;
 public class ConditionRecordsAnalyzer
 {
     ConditionRecord[] records;
-    public ConditionRecordsAnalyzer(string filePath)
+    public ConditionRecordsAnalyzer(string filePath, int copies = 1)
     {
         if (File.Exists(filePath) == false)
             throw new FileNotFoundException($"File {filePath} not found.");
 
         records = File.ReadAllLines(filePath)
-            .Select(l => ParseConditionRecord(l))
+            .Select(l => ParseConditionRecord(l, copies))
             .ToArray();
     }
 
@@ -73,11 +74,29 @@ public class ConditionRecordsAnalyzer
         return parts;
     }
 
-    private ConditionRecord ParseConditionRecord(string input)
+    private ConditionRecord ParseConditionRecord(string input, int copies)
     {
         var inputParts = input.Split(' ');
-        string row = inputParts[0];
-        int[] damagedGroups = inputParts[1]
+
+        StringBuilder rowBuilder = new();
+        for (int i = 0; i < copies; i++)
+        {
+            rowBuilder.Append(inputParts[0]);
+            if (i < copies - 1)
+                rowBuilder.Append("?");
+        }
+        string row = rowBuilder.ToString();
+
+        StringBuilder groupsBuilder = new StringBuilder();
+        for (int i = 0; i < copies; i++)
+        {
+            groupsBuilder.Append(inputParts[1]);
+            if (i < copies - 1)
+                groupsBuilder.Append(",");
+        }
+
+        int[] damagedGroups = groupsBuilder
+            .ToString()
             .Split(',')
             .Select(s => int.Parse(s))
             .ToArray();
