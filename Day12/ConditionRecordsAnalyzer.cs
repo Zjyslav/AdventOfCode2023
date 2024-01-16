@@ -1,4 +1,5 @@
 ﻿
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Day12;
@@ -21,7 +22,7 @@ public class ConditionRecordsAnalyzer
 
         foreach (var record in records)
         {
-            counts.Add(CountPossibleArrangements(record));
+            counts.Add(CountPossibleArrangementsByTryingAll(record));
         }
 
         return counts.Sum();
@@ -71,6 +72,61 @@ public class ConditionRecordsAnalyzer
                 parts.Add(part);
         }
         return parts;
+    }
+
+    private int CountPossibleArrangementsByTryingAll(ConditionRecord record)
+    {
+        int count = 0;
+        List<string> potentialArrangaments = GetAllPotentialArrangaments(record.Row);
+
+        foreach (var row in potentialArrangaments)
+        {
+            bool possible = EvaluateArrangament(row, record.DamagedGroups);
+            if (possible)
+                count++;
+        }
+
+        return count;
+    }
+
+    private List<string> GetAllPotentialArrangaments(string row)
+    {
+        List<string> previous = [row];
+        List<string> current;
+
+        for (int i = 0; i < row.Length; i++)
+        {
+            current = new();
+            if (row[i] != '?')
+                continue;
+
+            foreach (var s in previous)
+            {
+                current.Add(s.Remove(i, 1).Insert(i, "."));
+                current.Add(s.Remove(i, 1).Insert(i, "#"));
+            }
+
+            previous = current;
+        }
+
+        return previous;
+    }
+
+    private bool EvaluateArrangament(string row, int[] damagedGroups)
+    {
+        StringBuilder builder = new();
+        builder.Append(@"\A[.]*");
+        for (int i = 0; i < damagedGroups.Length; i++)
+        {
+            builder.Append($"[#]{{{damagedGroups[i]}}}[.]");
+            if (i < damagedGroups.Length - 1)
+                builder.Append("+");
+        }
+        builder.Append(@"*\Z");
+
+        string pattern = builder.ToString();
+
+        return Regex.IsMatch(row, pattern);
     }
 
     private ConditionRecord ParseConditionRecord(string input)
