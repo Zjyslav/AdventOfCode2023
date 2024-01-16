@@ -1,2 +1,7 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+﻿using Day12;
+
+ConditionRecordsAnalyzer analyzer = new("input.txt");
+
+int sum = analyzer.GetSumOfPossibleArrangements();
+
+Console.WriteLine($"Part 1: {sum}");
