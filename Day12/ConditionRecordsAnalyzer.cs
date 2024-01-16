@@ -18,14 +18,24 @@ public class ConditionRecordsAnalyzer
 
     public int GetSumOfPossibleArrangements()
     {
-        List<int> counts = new();
+        List<int> countsOriginal = new();
+        List<int> countsBruteForce = new();
 
         foreach (var record in records)
         {
-            counts.Add(CountPossibleArrangementsByTryingAll(record));
+            countsOriginal.Add(CountPossibleArrangements(record));
+            countsBruteForce.Add(CountPossibleArrangementsByTryingAll(record));
         }
 
-        return counts.Sum();
+        for (int i = 0; i < records.Length; i++)
+        {
+            if (countsOriginal[i] != countsBruteForce[i])
+            {
+                Console.WriteLine($"i: {i}\twrong: {countsOriginal[i]}\t correct: {countsBruteForce[i]}");
+            }
+        }
+
+        return countsBruteForce.Sum();
     }
 
     private int CountPossibleArrangements(ConditionRecord record)
