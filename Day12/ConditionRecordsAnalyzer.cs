@@ -6,6 +6,7 @@ namespace Day12;
 public class ConditionRecordsAnalyzer
 {
     ConditionRecord[] records;
+    Base3Converter converter = new();
     public ConditionRecordsAnalyzer(string filePath, int copies = 1)
     {
         if (File.Exists(filePath) == false)
@@ -30,8 +31,8 @@ public class ConditionRecordsAnalyzer
 
     private int CountPossibleArrangements(ConditionRecord record)
     {
-        List<string> previous = GetAllPotentialRemainingParts(record.Row, record.DamagedGroups[0], false);
-        List<string> current;
+        List<uint[]> previous = GetAllPotentialRemainingParts(converter.ConvertToBase3Array(record.Row), record.DamagedGroups[0], false);
+        List<uint[]> current;
 
         for (int i = 1; i < record.DamagedGroups.Length; i++)
         {
@@ -44,32 +45,42 @@ public class ConditionRecordsAnalyzer
             previous = current;
         }
 
-        return previous.Where(s => s.IndexOf('#') == -1).Count();
+        return previous.Where(x => converter.ConvertArrayToString(x).IndexOf('#') == -1).Count();
     }
 
-    private string? GetPotentialRemainingPart(string input, int damagedGroup, bool last)
+    private uint[] GetPotentialRemainingPart(uint[] input, int damagedGroup, bool last)
     {
+        string inputString = converter.ConvertArrayToString(input);
         string pattern = $@"(?<=\A[.\?]*[?#]{{{damagedGroup}}}{ (last ? "" : @"[.\?]")})[.#\?]*";
-        return Regex
-            .Matches(input, pattern)
+        var matchValue = Regex
+            .Matches(inputString, pattern)
             .FirstOrDefault()?
             .Value;
+        if (matchValue is null)
+            return [];
+        else
+            return converter.ConvertToBase3Array(matchValue);
     }
 
-    private List<string> GetAllPotentialRemainingParts(string input, int damagedGroup, bool last)
+    private List<uint[]> GetAllPotentialRemainingParts(uint[] input, int damagedGroup, bool last)
     {
-        List<string> parts = new();
-        for (int i = 0; i < input.Length; i++)
+        string inputString = converter.ConvertArrayToString(input);
+        List<uint[]> parts = new();
+        uint[] lastAdded = [];
+        for (int i = 0; i < inputString.Length; i++)
         {
-            string inputSkipped = input.Substring(0, i);
+            string inputSkipped = inputString.Substring(0, i);
             if (inputSkipped.Contains('#'))
                 return parts;
-            string inputFragment = input.Substring(i);
-            string? part = GetPotentialRemainingPart(inputFragment, damagedGroup, last);
-            if (part is null)
+            uint[] inputFragment = converter.ConvertToBase3Array(inputString.Substring(i));
+            uint[] part = GetPotentialRemainingPart(inputFragment, damagedGroup, last);
+            if (part.Length == 0 || (part.Length == 1 && part[0] == 0))
                 return parts;
-            else if (parts.LastOrDefault() != part)
+            else if (lastAdded.SequenceEqual(part) == false)
+            {
                 parts.Add(part);
+                lastAdded = part;
+            }
         }
         return parts;
     }
