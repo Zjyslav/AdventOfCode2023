@@ -23,7 +23,8 @@ public class ConditionRecordsAnalyzer
 
         foreach (var record in records)
         {
-            counts.Add(CountPossibleArrangements(record));
+            int count = CountPossibleArrangements(record);
+            counts.Add(count);
         }
 
         return counts.Sum();
@@ -31,21 +32,33 @@ public class ConditionRecordsAnalyzer
 
     private int CountPossibleArrangements(ConditionRecord record)
     {
-        List<uint[]> previous = GetAllPotentialRemainingParts(converter.ConvertToBase3Array(record.Row), record.DamagedGroups[0], false);
-        List<uint[]> current;
+        uint[] input = converter.ConvertToBase3Array(record.Row);
+        IEnumerable<uint[]> parts = [input];
+        return IterateOnRemainingParts(parts, record.DamagedGroups);
+    }
 
-        for (int i = 1; i < record.DamagedGroups.Length; i++)
+    private int IterateOnRemainingParts(IEnumerable<uint[]> remainingParts, int[] damagedParts)
+    {
+        int output = 0;
+        if (damagedParts.Length == 1)
         {
-            current = new();
-            bool last = i == record.DamagedGroups.Length - 1;
-            foreach (var part in previous)
+            foreach (var part in remainingParts)
             {
-                current.AddRange(GetAllPotentialRemainingParts(part, record.DamagedGroups[i], last));
+                var current = GetAllPotentialRemainingParts(part, damagedParts[0], true).ToList();
+                output += current
+                    .Where(x => converter.ConvertArrayToString(x).IndexOf('#') == -1)
+                    .Count();
             }
-            previous = current;
         }
-
-        return previous.Where(x => converter.ConvertArrayToString(x).IndexOf('#') == -1).Count();
+        else
+        {
+            foreach (var part in remainingParts)
+            {
+                var remaining = GetAllPotentialRemainingParts(part, damagedParts[0], false);
+                output += IterateOnRemainingParts(remaining, damagedParts[1..]);
+            }
+        }
+        return output;
     }
 
     private uint[] GetPotentialRemainingPart(uint[] input, int damagedGroup, bool last)
@@ -62,27 +75,25 @@ public class ConditionRecordsAnalyzer
             return converter.ConvertToBase3Array(matchValue);
     }
 
-    private List<uint[]> GetAllPotentialRemainingParts(uint[] input, int damagedGroup, bool last)
+    private IEnumerable<uint[]> GetAllPotentialRemainingParts(uint[] input, int damagedGroup, bool last)
     {
         string inputString = converter.ConvertArrayToString(input);
-        List<uint[]> parts = new();
-        uint[] lastAdded = [];
+        uint[] lastReturned = [];
         for (int i = 0; i < inputString.Length; i++)
         {
             string inputSkipped = inputString.Substring(0, i);
             if (inputSkipped.Contains('#'))
-                return parts;
+                yield break;
             uint[] inputFragment = converter.ConvertToBase3Array(inputString.Substring(i));
             uint[] part = GetPotentialRemainingPart(inputFragment, damagedGroup, last);
             if (part.Length == 0 || (part.Length == 1 && part[0] == 0))
-                return parts;
-            else if (lastAdded.SequenceEqual(part) == false)
+                yield break;
+            else if (lastReturned.SequenceEqual(part) == false)
             {
-                parts.Add(part);
-                lastAdded = part;
+                lastReturned = part;
+                yield return part;
             }
         }
-        return parts;
     }
 
     private ConditionRecord ParseConditionRecord(string input, int copies)
