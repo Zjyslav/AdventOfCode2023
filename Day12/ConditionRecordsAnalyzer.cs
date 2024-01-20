@@ -1,4 +1,5 @@
 ﻿
+using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -16,18 +17,33 @@ public class ConditionRecordsAnalyzer
             .ToArray();
     }
 
-    public int GetSumOfPossibleArrangements()
+    public int GetSumOfPossibleArrangements(int startIndex, int rows)
     {
         List<int> counts = new();
 
-        foreach (var record in records)
+        Stopwatch stopwatch = new();
+        for (int i = startIndex; i < records.Length; i++)
         {
-            counts.Add(CountPossibleArrangements(record));
-        }
+            ConditionRecord? record = records[i];
+            stopwatch.Restart();
+            int count = CountPossibleArrangements(record);
+            stopwatch.Stop();
+            Console.WriteLine($"{i}.\t{stopwatch.Elapsed}\t{count}");
+            counts.Add(count);
 
+            if (counts.Count >= rows)
+                break;
+        }
         return counts.Sum();
     }
-
+    public int GetSumOfPossibleArrangements(int startIndex)
+    {
+        return GetSumOfPossibleArrangements(startIndex, records.Length - startIndex);
+    }
+    public int GetSumOfPossibleArrangements()
+    {
+        return GetSumOfPossibleArrangements(0);
+    }
     private int CountPossibleArrangements(ConditionRecord record)
     {
         return IterateOnRemainingParts([record.Row], record.DamagedGroups);
