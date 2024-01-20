@@ -30,48 +30,58 @@ public class ConditionRecordsAnalyzer
 
     private int CountPossibleArrangements(ConditionRecord record)
     {
-        List<string> previous = GetAllPotentialRemainingParts(record.Row, record.DamagedGroups[0], false);
-        List<string> current;
+        return IterateOnRemainingParts([record.Row], record.DamagedGroups);
+    }
 
-        for (int i = 1; i < record.DamagedGroups.Length; i++)
+    private int IterateOnRemainingParts(IEnumerable<string> remainingParts, int[] damagedGroups)
+    {
+        int output = 0;
+        if (damagedGroups.Length == 1)
         {
-            current = new();
-            bool last = i == record.DamagedGroups.Length - 1;
-            foreach (var part in previous)
+            foreach (var part in remainingParts)
             {
-                current.AddRange(GetAllPotentialRemainingParts(part, record.DamagedGroups[i], last));
+                var current = GetAllPotentialRemainingParts(part, damagedGroups[0], true).ToList();
+                output += current
+                    .Where(s => s.IndexOf('#') == -1)
+                    .Count();
             }
-            previous = current;
         }
-
-        return previous.Where(s => s.IndexOf('#') == -1).Count();
+        else
+        {
+            foreach (var part in remainingParts)
+            {
+                var current = GetAllPotentialRemainingParts(part, damagedGroups[0], false);
+                output += IterateOnRemainingParts(current, damagedGroups[1..]);
+            }
+        }
+        return output;
     }
 
     private string? GetPotentialRemainingPart(string input, int damagedGroup, bool last)
     {
         string pattern = $@"(?<=\A[.\?]*[?#]{{{damagedGroup}}}{ (last ? "" : @"[.\?]")})[.#\?]*";
-        return Regex
-            .Matches(input, pattern)
-            .FirstOrDefault()?
-            .Value;
+        Match? matches = Regex.Matches(input, pattern).FirstOrDefault();
+        return matches?.Value;
     }
 
-    private List<string> GetAllPotentialRemainingParts(string input, int damagedGroup, bool last)
+    private IEnumerable<string> GetAllPotentialRemainingParts(string input, int damagedGroup, bool last)
     {
-        List<string> parts = new();
+        string? lastReturned = null;
         for (int i = 0; i < input.Length; i++)
         {
             string inputSkipped = input.Substring(0, i);
             if (inputSkipped.Contains('#'))
-                return parts;
+                yield break;
             string inputFragment = input.Substring(i);
             string? part = GetPotentialRemainingPart(inputFragment, damagedGroup, last);
             if (part is null)
-                return parts;
-            else if (parts.LastOrDefault() != part)
-                parts.Add(part);
+                yield break;
+            else if (lastReturned != part)
+            {
+                lastReturned = part;
+                yield return part;
+            }
         }
-        return parts;
     }
 
     private ConditionRecord ParseConditionRecord(string input, int copies)
