@@ -14,9 +14,9 @@ public class PatternAnalyzer
         string input = File.ReadAllText(filePath);
 
         patterns = input
-            .Split("\n\n")
+            .Split("\r\n\r\n")
             .Where(s => s.Length > 0)
-            .Select(s => s.Split("\n"))
+            .Select(s => s.Split("\r\n"))
             .Select(s => s
                 .Where(x => x.Length > 0)
                 .ToArray())
