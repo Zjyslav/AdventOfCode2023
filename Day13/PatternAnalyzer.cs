@@ -36,6 +36,16 @@ public class PatternAnalyzer
         return reflectionLines.Sum();
     }
 
+    public int SummarizePatternNotesWithSmudges()
+    {
+        List<int> reflectionLines = [];
+        foreach (var pattern in patternsAsNumbers)
+        {
+            reflectionLines.Add(FindNewReflectionLines(pattern));
+        }
+        return reflectionLines.Sum();
+    }
+
     private int FindReflectionLines(PatternAsNumbers pattern)
     {
         int output = 0;
@@ -84,6 +94,68 @@ public class PatternAnalyzer
             j--;
         }
         return true;
+    }
+
+    private int FindNewReflectionLines(PatternAsNumbers pattern)
+    {
+        int last = pattern.Rows[0];
+        for (int i = 1; i < pattern.Rows.Length; i++)
+        {
+            if (pattern.Rows[i] == last || DifferentByOneBit(pattern.Rows[i], last))
+            {
+                bool isNewReflectionLine = CheckIfNewReflectionLine(pattern.Rows, i);
+                if (isNewReflectionLine)
+                    return i * 100;
+            }
+            last = pattern.Rows[i];
+        }
+
+        last = pattern.Columns[0];
+        for (int i = 1; i < pattern.Columns.Length; i++)
+        {
+            if (pattern.Columns[i] == last || DifferentByOneBit(pattern.Columns[i], last))
+            {
+                bool isNewReflectionLine = CheckIfNewReflectionLine(pattern.Columns, i);
+                if (isNewReflectionLine)
+                    return i;
+            }
+            last = pattern.Columns[i];
+        }
+
+        return 0;
+    }
+    private bool CheckIfNewReflectionLine(int[] numbers, int index)
+    {
+        int i = index;
+        int j = index - 1;
+        bool foundSmudge = false;
+
+        while (true)
+        {
+            if (i > numbers.Length - 1 || j < 0)
+                break;
+
+            bool differentByOneBit = DifferentByOneBit(numbers[i], numbers[j]);
+
+            if ((numbers[i] != numbers[j] && differentByOneBit == false)
+                || (differentByOneBit && foundSmudge))
+            {
+                return false;
+            }
+
+            if (differentByOneBit)
+                foundSmudge = true;
+
+            i++;
+            j--;
+        }
+        return foundSmudge;
+    }
+
+    private bool DifferentByOneBit(int x, int y)
+    {
+        int difference = x ^ y;
+        return (difference != 0 && (difference & (difference - 1)) == 0);
     }
 
     private void ConvertAllPatternsToNumbers()
