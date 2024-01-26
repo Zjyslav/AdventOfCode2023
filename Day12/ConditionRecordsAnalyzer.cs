@@ -1,56 +1,96 @@
-﻿
-using System.Diagnostics;
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Day12;
 public class ConditionRecordsAnalyzer
 {
     ConditionRecord[] records;
-    public ConditionRecordsAnalyzer(string filePath, int copies = 1)
-    {
-        if (File.Exists(filePath) == false)
-            throw new FileNotFoundException($"File {filePath} not found.");
+    Queue<ConditionRecord> recordsQueue = new();
+    CountingProgressReport?[] progressReports = [];
+    private readonly string _filePath;
+    private readonly string _outputFolder;
+    private readonly int _copies;
 
-        records = File.ReadAllLines(filePath)
-            .Select(l => ParseConditionRecord(l, copies))
+    public ConditionRecordsAnalyzer(string filePath, string outputFolder, int copies = 1)
+    {
+        _filePath = filePath;
+        _outputFolder = outputFolder;
+        _copies = copies;
+
+        if (File.Exists(_filePath) == false)
+            throw new FileNotFoundException($"File {_filePath} not found.");
+
+        records = File.ReadAllLines(_filePath)
+            .Select((l, i) => ParseConditionRecord(l, _copies, i))
             .ToArray();
+
+        SetUpQueue();
     }
 
-    public int GetSumOfPossibleArrangements(int startIndex, int rows)
+    public async Task RunCountingTasks(int taskCount)
     {
-        List<int> counts = new();
+        Console.WriteLine($"Records in queue: {recordsQueue.Count}");
+        Console.WriteLine();
 
-        Stopwatch stopwatch = new();
-        for (int i = startIndex; i < records.Length; i++)
+        progressReports = new CountingProgressReport[taskCount];
+        
+        List<Task> tasks = [];
+        List<Progress<CountingProgressReport>> progressList = [];
+        for (int i = 0; i < taskCount; i++)
         {
-            ConditionRecord? record = records[i];
-            stopwatch.Restart();
-            int count = CountPossibleArrangements(record);
-            stopwatch.Stop();
-            Console.WriteLine($"{i}.\t{stopwatch.Elapsed}\t{count}");
-            counts.Add(count);
-
-            if (counts.Count >= rows)
-                break;
+            var progress = new Progress<CountingProgressReport>();
+            progress.ProgressChanged += Progress_ProgressChanged;
+            tasks.Add(WorkOnCounting(progress, i + 1));
+            progressList.Add(progress);
         }
-        return counts.Sum();
-    }
-    public int GetSumOfPossibleArrangements(int startIndex)
-    {
-        return GetSumOfPossibleArrangements(startIndex, records.Length - startIndex);
-    }
-    public int GetSumOfPossibleArrangements()
-    {
-        return GetSumOfPossibleArrangements(0);
-    }
-    private int CountPossibleArrangements(ConditionRecord record)
-    {
-        return IterateOnRemainingParts([record.Row], record.DamagedGroups);
+
+        var runningTasks = Task.WhenAll(tasks);
+
+        while (runningTasks.IsCompleted == false)
+        {
+            Console.ReadLine();
+            Console.WriteLine("Report:");
+            for (int i = 0; i < progressReports.Length; i++)
+            {
+                CountingProgressReport? report = progressReports[i];
+                if (report is not null)
+                {
+                    Console.WriteLine($"Task {report.TaskNumber}\t{report.Stopwatch.Elapsed}\t{report.Record!.index}\t{report.Count}");
+                }
+            }
+            Console.WriteLine();
+        }
     }
 
-    private int IterateOnRemainingParts(IEnumerable<string> remainingParts, int[] damagedGroups)
+    private void Progress_ProgressChanged(object? sender, CountingProgressReport e)
     {
+        progressReports[e.TaskNumber - 1] = null;
+        progressReports[e.TaskNumber-1] = e;
+    }
+
+    private void CountPossibleArrangements(ConditionRecord record,
+                                          IProgress<CountingProgressReport> progress,
+                                          CountingProgressReport progressReport)
+    {
+        int result = IterateOnRemainingParts([record.Row], record.DamagedGroups, progress, progressReport);
+        SaveResultOutput(result, record);
+    }
+
+    private void SaveResultOutput(int result, ConditionRecord record)
+    {
+        string path = Path.Combine(_outputFolder,
+            $"{Path.GetFileNameWithoutExtension(_filePath)}-{_copies}-{record.index.ToString("0000")}.csv");
+        string contents = $"{record};{result}";
+        File.WriteAllText(path, contents);
+    }
+
+    private int IterateOnRemainingParts(IEnumerable<string> remainingParts,
+                                        int[] damagedGroups,
+                                        IProgress<CountingProgressReport> progress,
+                                        CountingProgressReport progressReport)
+    {
+        progress.Report(progressReport);
+
         int output = 0;
         if (damagedGroups.Length == 1)
         {
@@ -60,6 +100,8 @@ public class ConditionRecordsAnalyzer
                 output += current
                     .Where(s => s.IndexOf('#') == -1)
                     .Count();
+                progressReport.Count += output;
+                progress.Report(progressReport);
             }
         }
         else
@@ -67,7 +109,7 @@ public class ConditionRecordsAnalyzer
             foreach (var part in remainingParts)
             {
                 var current = GetAllPotentialRemainingParts(part, damagedGroups[0], false);
-                output += IterateOnRemainingParts(current, damagedGroups[1..]);
+                output += IterateOnRemainingParts(current, damagedGroups[1..], progress, progressReport);
             }
         }
         return output;
@@ -100,7 +142,7 @@ public class ConditionRecordsAnalyzer
         }
     }
 
-    private ConditionRecord ParseConditionRecord(string input, int copies)
+    private ConditionRecord ParseConditionRecord(string input, int copies, int index)
     {
         var inputParts = input.Split(' ');
 
@@ -127,8 +169,61 @@ public class ConditionRecordsAnalyzer
             .Select(s => int.Parse(s))
             .ToArray();
 
-        return new ConditionRecord(row, damagedGroups);
+        return new ConditionRecord(row, damagedGroups, index);
     }
 
-    public record ConditionRecord(string Row, int[] DamagedGroups);
+    private void SetUpQueue()
+    {
+        string inputName = $"{Path.GetFileNameWithoutExtension(_filePath)}-{_copies}-";
+
+        if (Directory.Exists(_outputFolder) == false)
+            Directory.CreateDirectory(_outputFolder);
+
+        var processedIndexes = Directory
+            .EnumerateFiles(_outputFolder)
+            .Select(s => Path.GetFileNameWithoutExtension(s))
+            .Where(s => s.StartsWith(inputName))
+            .Select(s => int.Parse(s.Substring(inputName.Length)));
+
+        var notProcessed = records
+            .Where(r => processedIndexes.Contains(r.index) == false)
+            .ToArray();
+
+        Random.Shared.Shuffle(notProcessed);
+
+        foreach (var record in notProcessed)
+        {
+            recordsQueue.Enqueue(record);
+        }
+    }
+
+    private async Task WorkOnCounting(IProgress<CountingProgressReport> progress, int taskNumber)
+    {
+        while (recordsQueue.Any())
+        {
+            ConditionRecord record = recordsQueue.Dequeue();
+            CountingProgressReport progressReport = new(record, taskNumber);
+            progress.Report(progressReport);
+            
+
+            Console.WriteLine($"Task {taskNumber} starts work on record index {record.index}. Remaining in queue: {recordsQueue.Count}");
+
+            await Task.Run(() =>
+            {
+                CountPossibleArrangements(record, progress, progressReport);
+            });
+
+            progressReport.Stopwatch.Stop();
+            Console.WriteLine($"Task {taskNumber} ends work on record index {record.index}. Elapsed: {progressReport.Stopwatch.Elapsed} Remaining in queue: {recordsQueue.Count}");
+            progress.Report(progressReport);
+        }
+    }
+
+    public record ConditionRecord(string Row, int[] DamagedGroups, int index)
+    {
+        public override string ToString()
+        {
+            return $"{index};{Row};{string.Join(',',DamagedGroups.Select(x => x.ToString()))}";
+        }
+    };
 }

@@ -1,47 +1,17 @@
 ﻿using Day12;
 
-int? startIndex = null, rows = null;
+int taskCount = 1;
+int copies = 1;
 
 if (args.Length >= 1)
 {
-    startIndex = int.Parse(args[0]);
+    copies = int.Parse(args[0]);
 }
 if (args.Length == 2)
 {
-    rows = int.Parse(args[1]);
+    taskCount = int.Parse(args[1]);
 }
 
-ConditionRecordsAnalyzer analyzer = new("input.txt");
+ConditionRecordsAnalyzer analyzer = new("input.txt", "output", copies);
 
-int sum;
-if (startIndex is null)
-{
-    sum = analyzer.GetSumOfPossibleArrangements();
-}
-else if (rows is null)
-{
-    sum = analyzer.GetSumOfPossibleArrangements((int)startIndex);
-}
-else
-{
-    sum = analyzer.GetSumOfPossibleArrangements((int)startIndex, (int)rows);
-}
-
-Console.WriteLine($"Part 1: {sum}");
-
-analyzer = new("input.txt", 5);
-
-if (startIndex is null)
-{
-    sum = analyzer.GetSumOfPossibleArrangements();
-}
-else if (rows is null)
-{
-    sum = analyzer.GetSumOfPossibleArrangements((int)startIndex);
-}
-else
-{
-    sum = analyzer.GetSumOfPossibleArrangements((int)startIndex, (int)rows);
-}
-
-Console.WriteLine($"Part 2: {sum}");
+await analyzer.RunCountingTasks(taskCount);
