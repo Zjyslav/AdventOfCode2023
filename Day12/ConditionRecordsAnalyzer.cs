@@ -72,11 +72,11 @@ public class ConditionRecordsAnalyzer
                                           IProgress<CountingProgressReport> progress,
                                           CountingProgressReport progressReport)
     {
-        int result = IterateOnRemainingParts([record.Row], record.DamagedGroups, progress, progressReport);
+        long result = IterateOnRemainingParts([record.Row], record.DamagedGroups, progress, progressReport);
         SaveResultOutput(result, record);
     }
 
-    private void SaveResultOutput(int result, ConditionRecord record)
+    private void SaveResultOutput(long result, ConditionRecord record)
     {
         string path = Path.Combine(_outputFolder,
             $"{Path.GetFileNameWithoutExtension(_filePath)}-{_copies}-{record.index.ToString("0000")}.csv");
@@ -84,14 +84,14 @@ public class ConditionRecordsAnalyzer
         File.WriteAllText(path, contents);
     }
 
-    private int IterateOnRemainingParts(IEnumerable<string> remainingParts,
+    private long IterateOnRemainingParts(IEnumerable<string> remainingParts,
                                         int[] damagedGroups,
                                         IProgress<CountingProgressReport> progress,
                                         CountingProgressReport progressReport)
     {
         progress.Report(progressReport);
 
-        int output = 0;
+        long output = 0;
         if (damagedGroups.Length == 1)
         {
             foreach (var part in remainingParts)

@@ -6,7 +6,7 @@ public class CountingProgressReport
 {
     public Stopwatch Stopwatch { get; set; }
     public ConditionRecord? Record { get; set; }
-    public int Count { get; set; } = 0;
+    public long Count { get; set; } = 0;
     public int TaskNumber { get; set; }
 
     public CountingProgressReport(ConditionRecord? record, int taskNumber)
