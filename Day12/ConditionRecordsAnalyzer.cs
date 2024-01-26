@@ -115,8 +115,9 @@ public class ConditionRecordsAnalyzer
         return output;
     }
 
-    private string? GetPotentialRemainingPart(string input, int damagedGroup, bool last)
+    private uint[] GetPotentialRemainingPart(uint[] input, int damagedGroup, bool last)
     {
+        string inputString = converter.ConvertArrayToString(input);
         string pattern = $@"(?<=\A[.\?]*[?#]{{{damagedGroup}}}{ (last ? "" : @"[.\?]")})[.#\?]*";
         Match? matches = Regex.Matches(input, pattern).FirstOrDefault();
         return matches?.Value;
@@ -127,7 +128,7 @@ public class ConditionRecordsAnalyzer
         string? lastReturned = null;
         for (int i = 0; i < input.Length; i++)
         {
-            string inputSkipped = input.Substring(0, i);
+            string inputSkipped = inputString.Substring(0, i);
             if (inputSkipped.Contains('#'))
                 yield break;
             string inputFragment = input.Substring(i);
