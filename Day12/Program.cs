@@ -1,13 +1,17 @@
 ﻿using Day12;
 
-ConditionRecordsAnalyzer analyzer = new("input.txt");
+int taskCount = 1;
+int copies = 1;
 
-int sum = analyzer.GetSumOfPossibleArrangements();
+if (args.Length >= 1)
+{
+    copies = int.Parse(args[0]);
+}
+if (args.Length == 2)
+{
+    taskCount = int.Parse(args[1]);
+}
 
-Console.WriteLine($"Part 1: {sum}");
+ConditionRecordsAnalyzer analyzer = new("input.txt", "output", copies);
 
-analyzer = new("input.txt", 5);
-
-int sumWithCopies = analyzer.GetSumOfPossibleArrangements();
-
-Console.WriteLine($"Part 2: {sumWithCopies}");
+await analyzer.RunCountingTasks(taskCount);
