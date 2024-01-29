@@ -1,2 +1,7 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+﻿using Day14;
+
+PlatformLoadAnalyzer analyzer = new("input.txt");
+
+int load = analyzer.CalculateLoadOnNorthSupportBeams();
+
+Console.WriteLine($"Part 1: {load}");
