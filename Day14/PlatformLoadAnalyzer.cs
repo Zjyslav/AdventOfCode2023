@@ -1,4 +1,6 @@
-﻿namespace Day14;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Day14;
 public class PlatformLoadAnalyzer
 {
     char[][] _platform;
@@ -8,17 +10,50 @@ public class PlatformLoadAnalyzer
         
     }
 
-    public int CalculateLoadOnNorthSupportBeams()
+    public int CalculateLoadOnNorthSupportBeams(long spincCycles = 0)
     {
-        char[][] platformTiltedNorth = TiltNorth(_platform);
-        int load = 0;
-        for (int r = 0; r < platformTiltedNorth.Length; r++)
+        var platform = _platform;
+        if (spincCycles == 0)
+            platform = TiltNorth(platform);
+        else
         {
-            for (int c = 0; c < _platform[r].Length; c++)
+            List<string> platforms = [ConvertPlatformToString(platform)];
+            bool foundRepetition = false;
+            long countdown = 0;
+            for (long i = 1; i <= spincCycles; i++)
             {
-                if (_platform[r][c] == 'O')
+                platform = SpinCycle(platform);
+                string platformString = ConvertPlatformToString(platform);
+                if (foundRepetition == false && platforms.Contains(platformString))
                 {
-                    load += _platform.Length - r;
+                    foundRepetition = true;
+                    long firstRepeated = platforms.IndexOf(platformString);
+                    long period = i - firstRepeated;
+                    countdown = (spincCycles - i - 1) % period;
+                    if (countdown == 0)
+                        break;
+                }
+                else if (foundRepetition == false)
+                    platforms.Add(platformString);
+                else
+                {
+                    if (countdown == 0)
+                        break;
+                    else
+                        countdown--;
+                }
+
+            }
+        }
+        
+        int load = 0;
+        for (int r = 0; r < platform.Length; r++)
+        {
+            for (int c = 0; c < platform[r].Length; c++)
+            {
+                if (platform[r][c] == 'O')
+                {
+                    load += platform.Length - r;
                 }
             }
         }
@@ -36,6 +71,38 @@ public class PlatformLoadAnalyzer
             }
         }
         return platform;
+    }
+
+    private char[][] SpinCycle(char[][] platform)
+    {
+        // North
+        platform = TiltNorth(platform);
+        // West
+        platform = RotatePlatformClockwise(platform);
+        platform = TiltNorth(platform);
+        // South
+        platform = RotatePlatformClockwise(platform);
+        platform = TiltNorth(platform);
+        // East
+        platform = RotatePlatformClockwise(platform);
+        platform = TiltNorth(platform);
+
+        platform = RotatePlatformClockwise(platform);
+        return platform;
+    }
+
+    private char[][] RotatePlatformClockwise(char[][] platform)
+    {
+        char[][] output = new char[platform[0].Length][];
+        for (int i = 0; i < output.Length; i++)
+        {
+            output[i] = new char[platform.Length];
+            for (int j = 0; j < output[i].Length; j++)
+            {
+                output[i][j] = platform[platform[0].Length - j - 1][i];
+            }
+        }
+        return output;
     }
 
     private void RollNorth(int r, int c, ref char[][] platform)
@@ -58,5 +125,11 @@ public class PlatformLoadAnalyzer
                 return;
             }
         }
+    }
+    private string ConvertPlatformToString(char[][] platform)
+    {
+        return string.Join("",
+            platform
+                .Select(r => new string(r)));
     }
 }
