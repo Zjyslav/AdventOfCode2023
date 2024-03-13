@@ -68,11 +68,11 @@ public class ConditionRecordsAnalyzer
         progressReports[e.TaskNumber-1] = e;
     }
 
-    private void CountPossibleArrangements(ConditionRecord record,
+    private async Task CountPossibleArrangements(ConditionRecord record,
                                           IProgress<CountingProgressReport> progress,
                                           CountingProgressReport progressReport)
     {
-        long result = IterateOnRemainingParts([record.Row], record.DamagedGroups, progress, progressReport);
+        long result = await IterateOnRemainingParts([record.Row], record.DamagedGroups, progress, progressReport);
         SaveResultOutput(result, record);
     }
 
@@ -84,7 +84,7 @@ public class ConditionRecordsAnalyzer
         File.WriteAllText(path, contents);
     }
 
-    private long IterateOnRemainingParts(IEnumerable<string> remainingParts,
+    private async Task<long> IterateOnRemainingParts(IEnumerable<string> remainingParts,
                                         int[] damagedGroups,
                                         IProgress<CountingProgressReport> progress,
                                         CountingProgressReport progressReport)
@@ -94,24 +94,36 @@ public class ConditionRecordsAnalyzer
         long output = 0;
         if (damagedGroups.Length == 1)
         {
+            List<Task<long>> tasks = [];
             foreach (var part in remainingParts)
             {
-                var current = GetAllPotentialRemainingParts(part, damagedGroups[0], true).ToList();
-                output += current
-                    .Where(s => s.IndexOf('#') == -1)
-                    .Count();
-                progressReport.Count += output;
-                progress.Report(progressReport);
+                tasks.Add(Task.Run(() => CountPotentialRemainingPartsOnLastIteration(part, damagedGroups[0])));
             }
+            await Task.WhenAll(tasks);
+            foreach (var task in tasks)
+            {
+                output += task.Result;
+            }
+            progressReport.Count += output;
+            progress.Report(progressReport);
         }
         else
         {
             foreach (var part in remainingParts)
             {
                 var current = GetAllPotentialRemainingParts(part, damagedGroups[0], false);
-                output += IterateOnRemainingParts(current, damagedGroups[1..], progress, progressReport);
+                output += await IterateOnRemainingParts(current, damagedGroups[1..], progress, progressReport);
             }
         }
+        return output;
+    }
+
+    private long CountPotentialRemainingPartsOnLastIteration(string part, int damagedGroup)
+    {
+        var current = GetAllPotentialRemainingParts(part, damagedGroup, true).ToList();
+        long output = current
+                    .Where(s => s.IndexOf('#') == -1)
+                    .Count();
         return output;
     }
 
@@ -208,10 +220,7 @@ public class ConditionRecordsAnalyzer
 
             Console.WriteLine($"Task {taskNumber} starts work on record index {record.index}. Remaining in queue: {recordsQueue.Count}");
 
-            await Task.Run(() =>
-            {
-                CountPossibleArrangements(record, progress, progressReport);
-            });
+            await CountPossibleArrangements(record, progress, progressReport);
 
             progressReport.Stopwatch.Stop();
             Console.WriteLine($"Task {taskNumber} ends work on record index {record.index}. Elapsed: {progressReport.Stopwatch.Elapsed} Remaining in queue: {recordsQueue.Count}");
