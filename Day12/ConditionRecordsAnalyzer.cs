@@ -99,11 +99,8 @@ public class ConditionRecordsAnalyzer
             {
                 tasks.Add(Task.Run(() => CountPotentialRemainingPartsOnLastIteration(part, damagedGroups[0])));
             }
-            await Task.WhenAll(tasks);
-            foreach (var task in tasks)
-            {
-                output += task.Result;
-            }
+            var results = await Task.WhenAll(tasks);
+            output = results.Sum();
             progressReport.Count += output;
             progress.Report(progressReport);
         }
